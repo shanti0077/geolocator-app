@@ -5,7 +5,7 @@ from sklearn.cluster import KMeans
 st.title("Location Based Recommender System Using Clustering")
 
 # Load the data
-df = pd.read_csv('cities2.csv', sep=',')
+df = pd.read_csv('cities2.csv')
 
 # Extract relevant columns for clustering
 L2 = df.iloc[:, -1: -3: -1]
