@@ -5,7 +5,7 @@ from sklearn.cluster import KMeans
 
 # Function to load and preprocess data
 def load_data():
-    file_path = 'locations.csv'  # assuming CSV file is named 'locations.csv' in the main folder
+    file_path = 'locations_30.csv'  # assuming CSV file is named 'locations.csv' in the main folder
     df = pd.read_csv(file_path)
     geolocator = Nominatim(user_agent="Trips")
     coordinates = []
