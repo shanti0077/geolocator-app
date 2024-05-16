@@ -1,45 +1,35 @@
-import pandas as pd
 import streamlit as st
-from geopy.geocoders import Nominatim
+import pandas as pd
 from sklearn.cluster import KMeans
 
-# Function to load and preprocess data
-def load_data():
-    file_path = 'locations_30.csv'  # assuming CSV file is named 'locations.csv' in the main folder
-    df = pd.read_csv(file_path)
-    geolocator = Nominatim(user_agent="Trips")
-    coordinates = []
-    for city in df['location']:
-        location = geolocator.geocode(city)
-        coordinates.append((location.latitude, location.longitude) if location else (None, None))
-    df[['Latitude', 'Longitude']] = pd.DataFrame(coordinates, columns=['Latitude', 'Longitude'])
-    return df.dropna()
+st.title("Location Based Recommender System Using Clustering")
 
-# Function to find nearest cities
-def find_nearest_cities(df, input_city, n=5):
-    input_city_row = df[df['location'] == input_city]
-    if input_city_row.empty:
-        return []
-    input_lat, input_lon = input_city_row.iloc[0]['Latitude'], input_city_row.iloc[0]['Longitude']
-    df['distance'] = ((df['Latitude'] - input_lat) ** 2 + (df['Longitude'] - input_lon) ** 2) ** 0.5
-    nearest_cities = df.sort_values(by='distance').iloc[1:n+1]['location'].tolist()
-    return nearest_cities
+# Load the data
+df = pd.read_csv('cities2.csv', sep=',')
 
-# Streamlit App
-def main():
-    st.title("Location Based Recommender System")
-    st.text("Developer - Shanti Trivedi")
+# Extract relevant columns for clustering
+L2 = df.iloc[:, -1: -3: -1]
 
-    df = load_data()
-    city_names = df['location'].tolist()
-    input_city = st.selectbox("Select a city", city_names)
-    if st.button("Find Nearest Cities"):
-        nearest_cities = find_nearest_cities(df, input_city)
-        if nearest_cities:
-            st.success(f"The 5 nearest cities to {input_city} are: {', '.join(nearest_cities)}")
-            
-        else:
-            st.warning("City not found or location data not available.")
+# Perform KMeans clustering
+kmeans = KMeans(n_clusters=10, random_state=0)  #north South West East and Central India
+kmeans.fit(L2)
 
-if __name__ == "__main__":
-    main()
+# Add cluster labels to the dataframe
+df['loc_clusters'] = kmeans.labels_
+
+# Create input box for user to enter city name
+input_city = st.text_input("Enter a city name:")
+
+if input_city:
+    # Find the cluster of the input city
+    try:
+        cluster = int(df.loc[df['location'] == input_city, 'loc_clusters'].iloc[0])
+        
+        # Find cities in the same cluster and display them
+        cities = df.loc[df['loc_clusters'] == cluster, 'location']
+        st.write("Cities in the same cluster:")
+        for c in cities:
+            if c != input_city:
+                st.write(c)
+    except IndexError:
+        st.write("City not found in the dataset.")
