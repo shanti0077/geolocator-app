@@ -1,37 +1,44 @@
+import pandas as pd
 import streamlit as st
 from geopy.geocoders import Nominatim
-from geopy.distance import geodesic
+from sklearn.cluster import KMeans
 
-def get_nearby_cities(city_name, num_cities=5, distance_threshold=50):
-    geolocator = Nominatim(user_agent="city_nearby_app")
-    location = geolocator.geocode(city_name)
-    if location:
-        lat, lon = location.latitude, location.longitude
-        nearby_cities = []
-        for nearby_location in geolocator.reverse((lat, lon), exactly_one=False):
-            if nearby_location.address != city_name:
-                city_distance = geodesic((lat, lon), (nearby_location.latitude, nearby_location.longitude)).kilometers
-                if city_distance <= distance_threshold:
-                    nearby_cities.append((nearby_location.address, round(city_distance, 2)))
-                if len(nearby_cities) >= num_cities:
-                    break
-        return nearby_cities
-    else:
-        return None
+# Function to load and preprocess data
+def load_data(file):
+    df = pd.read_csv(file)
+    geolocator = Nominatim(user_agent="Trips")
+    coordinates = []
+    for city in df['location']:
+        location = geolocator.geocode(city)
+        coordinates.append((location.latitude, location.longitude) if location else (None, None))
+    df[['Latitude', 'Longitude']] = pd.DataFrame(coordinates, columns=['Latitude', 'Longitude'])
+    return df.dropna()
 
-# Streamlit UI
-st.title("Find Nearby Cities")
-st.text("Developer - Shanti Trivedi")
-input_city = st.text_input("Enter a city name:")
-num_nearby_cities = st.slider("Number of nearby cities to display:", min_value=1, max_value=20, value=5)
-distance_threshold = st.slider("Maximum distance (in kilometers):", min_value=10, max_value=200, value=50)
+# Function to find nearest cities
+def find_nearest_cities(df, input_city, n=5):
+    input_city_row = df[df['location'] == input_city]
+    if input_city_row.empty:
+        return []
+    input_lat, input_lon = input_city_row.iloc[0]['Latitude'], input_city_row.iloc[0]['Longitude']
+    df['distance'] = ((df['Latitude'] - input_lat) ** 2 + (df['Longitude'] - input_lon) ** 2) ** 0.5
+    nearest_cities = df.sort_values(by='distance').iloc[1:n+1]['location'].tolist()
+    return nearest_cities
 
-if input_city:
-    nearby_cities = get_nearby_cities(input_city, num_cities=num_nearby_cities, distance_threshold=distance_threshold)
-    if nearby_cities:
-        st.success(f"Nearby cities to {input_city}:")
-        for city, distance in nearby_cities:
-            st.write(f"- {city} ({distance} km)")
-    else:
-        st.error("City not found or no nearby cities found.")
+# Streamlit App
+def main():
+    st.title("Find Nearest Cities")
 
+    uploaded_file = st.file_uploader("Upload CSV", type=['csv'])
+    if uploaded_file is not None:
+        df = load_data(uploaded_file)
+        city_names = df['location'].tolist()
+        input_city = st.selectbox("Select a city", city_names)
+        if st.button("Find Nearest Cities"):
+            nearest_cities = find_nearest_cities(df, input_city)
+            if nearest_cities:
+                st.success(f"The 5 nearest cities to {input_city} are: {', '.join(nearest_cities)}")
+            else:
+                st.warning("City not found or location data not available.")
+
+if __name__ == "__main__":
+    main()
