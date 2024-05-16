@@ -27,7 +27,8 @@ def find_nearest_cities(df, input_city, n=5):
 
 # Streamlit App
 def main():
-    st.title("Find Nearest Cities")
+    st.title("Location Based Recommender System")
+    st.text("Developer - Shanti Trivedi")
 
     df = load_data()
     city_names = df['location'].tolist()
