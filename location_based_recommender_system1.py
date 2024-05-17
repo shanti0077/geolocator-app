@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.cluster import KMeans
 
 st.title("Location Based Recommender System Using Clustering")
-st.text("Developer - Vjti Students")
+st.text("Developer- Rushi / Shanti/ Vitthal")
 
 # Load the data
 df = pd.read_csv('cities2.csv')
