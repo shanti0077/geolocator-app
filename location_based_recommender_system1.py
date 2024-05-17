@@ -35,3 +35,8 @@ if input_city:
     except IndexError:
         st.write("City not found in the dataset.")
 
+from sklearn.metrics import silhouette_score
+
+silhouette_avg = silhouette_score(L2, kmeans.labels_)
+st.write(f"Silhouette Score: {silhouette_avg}")
+
